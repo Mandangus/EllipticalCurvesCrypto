@@ -1,3 +1,6 @@
+import math
+
+
 
 #ponto para o infinito 
 INF_POINT = None
@@ -8,14 +11,30 @@ class EllipticCurve:
         self.b = b
         self.p = p
         self.points = []
-        self.define_points()
 
+    # aqui temos um problemão!!! Não podemos guardar primos muito grandes pois teríamos muitos pontos!
+    # para resolver esse problema vamos guardar apenas o ponto gerador! Isso seja, o ponto G que
+    # k*G = qualquer outro ponto na curva! Sendo 0 <= k <= n  
     def define_points(self):
         self.points.append(INF_POINT)
         for x in range(self.p):
             for y in range(self.p):
                 if self.equal_modp(y*y,x*x*x + self.a*x + self.b):
                     self.points.append((x,y))
+
+    # Para resolver o problema descrito acima vamos fazer uma função que multiplica um ponto k vezes!
+    def multiplication(self, k, p):
+        x = p
+        q = INF_POINT
+        if k == 0:
+            return q
+        # vamos bit a bit em k vendo se o LSB é 0 ou 1. Se for 1 fazemos Q = Q + X
+        while k != 0:
+            if k & 1 != 0:
+                q = self.addition(q,x)
+            x = self.addition(x,x)
+            k >>= 1
+        return q
 
     #funções auxiliares para a curva
 
@@ -30,12 +49,25 @@ class EllipticCurve:
     
     def equal_modp(self, x, y):
         return self.reduce_modp(x - y) == 0
+
+    def is_on_curve(self, x, y):
+        return self.equal_modp(y * y, pow(x,3) + self.a * x + self.b)
     
+    # aqui fazemos uma busca 'brute-force' pelos pontos que,
+    # para primos gigantes, é computacionalmente impossível!!
     def inverse_modp(self, x):
         for y in range(self.p):
             if self.equal_modp(x*y,1):
                 return y
         return None
+
+    # aqui melhoramos drasticamente o código!
+    # com o pequeno teorema de Fermat temos: se p é primo e x é um natural tal que (x,p) == 1...
+    # ... temos que  o inverso do mod x -> x^-1 == x^(p-2)(mod p)
+    def inverse_modp_fermat(self, x):
+        if x % self.p == 0:
+            return None
+        return pow(x,self.p-2,self.p)
 
     def discriminant(self):
         # Discr = (4 * a^3) + (27 * b^2)
@@ -63,10 +95,10 @@ class EllipticCurve:
         if self.equal_modp(x1,x2) and self.equal_modp(y1,y2):
             # lambda = coeficiente angular da reta que passa em p1 e p2
             #       ... se p1 == p2 então seria a derivada da tangente!
-            u = self.reduce_modp((3 * pow(x1,2) + self.a) * self.inverse_modp(2*y1))
+            u = self.reduce_modp((3 * pow(x1,2) + self.a) * self.inverse_modp_fermat(2*y1))
         else:
             # entre 0 e (p - 1)
-            u = self.reduce_modp((y1 - y2) * self.inverse_modp(x1 - x2))
+            u = self.reduce_modp((y1 - y2) * self.inverse_modp_fermat(x1 - x2))
         v = self.reduce_modp(y1 - u * x1)
 
 
