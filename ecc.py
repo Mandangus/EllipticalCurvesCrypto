@@ -1,6 +1,6 @@
+
+
 import math
-
-
 
 #ponto para o infinito 
 INF_POINT = None
@@ -142,6 +142,10 @@ def main():
     p3 = ec.addition(ec.points[5],ec.points[14])
     p = 19
     print(f"Número de curvas possiveis com p {p}: {count_all_possible_curves(p)}")
+    # Vamos comuptar, seguindo o modelo da página 11 do artigo, uma chave que Joao e Maria concordam!
+
+
 
 if __name__ == '__main__':
     main()
+
