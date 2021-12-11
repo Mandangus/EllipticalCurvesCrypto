@@ -6,11 +6,16 @@ import math
 INF_POINT = None
 
 class EllipticCurve:
-    def __init__(self,a,b,p) -> None:
+    def __init__(self,a,b,p,G) -> None:
+        # componentes a e b da curva elíptica
         self.a = a
         self.b = b
+        # primo
         self.p = p
+        # pontos da curva
         self.points = []
+        # ponto Gerador para curvas com primos grandes
+        self.G = G
 
     # aqui temos um problemão!!! Não podemos guardar primos muito grandes pois teríamos muitos pontos!
     # para resolver esse problema vamos guardar apenas o ponto gerador! Isso seja, o ponto G que
@@ -138,11 +143,51 @@ def count_all_possible_curves(p):
 
 
 def main():
-    ec = EllipticCurve(2,7,19)
-    p3 = ec.addition(ec.points[5],ec.points[14])
-    p = 19
-    print(f"Número de curvas possiveis com p {p}: {count_all_possible_curves(p)}")
-    # Vamos comuptar, seguindo o modelo da página 11 do artigo, uma chave que Joao e Maria concordam!
+    # Vamos comuptar, seguindo o modelo da página 11 seção 6.4.2 do artigo, uma curva que Micheal e Nikita concordam!
+    p = 785963102379428822376694789446897396207498568951
+    a = 317689081251325503476317476413827693272746955927
+    b = 79052896607878758718120572025718535432100651934
+    G = (771507216262649826170648268565579889907769254176, 390157510246556628525279459266514995562533196655)
+
+    # Criando a curva elíptica para os dados acima
+    ec = EllipticCurve(a,b,p,G) 
+    
+    # Chave privada de Nikita!
+    n = 670805031139910513517527207693060456300217054473
+
+    # Vamos checar se o G esta correto? Para isso vemos se ele pelo menos está presente na curva...
+    print()
+    print('G está na cruva? ',end="")
+    print(ec.is_on_curve(G[0],G[1]))
+    # Seguindo... pela teoria sabemos que o Gerador * 0 tem que resultar em INF_POINT (None) certo? então vamos testar!
+    print('G * 0 = ',end="")
+    print(ec.multiplication(0,G))
+    print()
+    # No arquivo encriptado temos um par de pontos: (rB, P + r(nB)) onde B é o ponto gerador
+    rB = (179671003218315746385026655733086044982194424660, 697834385359686368249301282675141830935176314718)
+    PplusrnB =  (137851038548264467372645158093004000343639118915, 110848589228676224057229230223580815024224875699)
+
+    # Computamos n*(rB) com nossa chave secreta 
+    nrB = ec.multiplication(n,rB)
+    # se compararmos com o artigo vemos que computamos nrB corretamente!!
+    print(f"calculando n*(rB) = {nrB}")
+    print()
+    # Agora para obter a chave para desbloquear o conteúdo encriptado vamos fazer P + r(nB) - n(rB)
+    P = (14489646124220757767, 669337780373284096274895136618194604469696830074) # P do artigo
+    # Vamos ver se P calculado é igual...
+    Pcalculado = ec.addition(PplusrnB,(nrB[0],ec.reduce_modp(-nrB[1])))
+    if Pcalculado == P:
+        print('Deu certo! Deciframos corretamente o P')
+
+    # Com isso temos a chave de acesso! Podemos decriptar o arquivo a vontade!
+    print(f"Chave de acesso computada:{Pcalculado[0]}")
+
+
+    # Para fechar com chave de ouro! Vamos ver se P + n(rB) calculado vai ser igual ao P + r(nB) dado no início!!
+    print('P(calculado) + r(nB)(também calculado) é igual ao P + r(nB) dado? ',end="")
+    print(ec.addition(nrB,Pcalculado) == PplusrnB)
+    
+
 
 
 
